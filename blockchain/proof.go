@@ -1,87 +1,87 @@
 package blockchain
 
 import (
-	"bytes"
-	"encoding/binary"
-	"log"
-	"math/big"
-	"math"
+    "bytes"
+    "encoding/binary"
+    "log"
+    "math/big"
+    "math"
     "crypto/sha256"
     "fmt"
 )
 
-const Difficulty = 15
+const Difficulty = 18
 
 type ProofOfWork struct {
-	Block *Block
-	Target *big.Int
+    Block *Block
+    Target *big.Int
 }
 
 func NewProof (b *Block) *ProofOfWork {
-	target := big.NewInt(1)
-	target.Lsh(target, uint(256-Difficulty))
+    target := big.NewInt(1)
+    target.Lsh(target, uint(256-Difficulty))
 
-	pow := &ProofOfWork{b, target}
+    pow := &ProofOfWork{b, target}
 
-	return pow
+    return pow
 }
 
 func ToHex (num int64) []byte {
-	buff := new(bytes.Buffer)
-	err := binary.Write(buff, binary.BigEndian, num)
+    buff := new(bytes.Buffer)
+    err := binary.Write(buff, binary.BigEndian, num)
 
-	if err != nil {
-		log.Panic(err)
-	}
+    if err != nil {
+        log.Panic(err)
+    }
 
-	return buff.Bytes()
+    return buff.Bytes()
 }
 
 func (pow *ProofOfWork) InitData(nonce int) []byte {
-	data := bytes.Join(
-		[][]byte{
-			pow.Block.PrevHash,
-			pow.Block.Data,
-			ToHex(int64(nonce)),
-			ToHex(int64(Difficulty)),
-		},
-		[]byte{},
-	)
+    data := bytes.Join(
+        [][]byte{
+            pow.Block.PrevHash,
+            pow.Block.Data,
+            ToHex(int64(nonce)),
+            ToHex(int64(Difficulty)),
+        },
+        []byte{},
+    )
 
-	return data
+    return data
 }
 
 func (pow *ProofOfWork) Run() (int, []byte) {
-	var intHash big.Int
-	var hash [32]byte
+    var intHash big.Int
+    var hash [32]byte
 
-	nonce := pow.Block.Nonce
+    nonce := pow.Block.Nonce
 
-	for nonce < math.MaxInt64 {
-		data := pow.InitData(nonce)
-		hash = sha256.Sum256(data)
+    for nonce < math.MaxInt64 {
+        data := pow.InitData(nonce)
+        hash = sha256.Sum256(data)
 
-		fmt.Printf("\r%x", hash)
-		intHash.SetBytes(hash[:])
+        fmt.Printf("\r%x", hash)
+        intHash.SetBytes(hash[:])
 
-		if intHash.Cmp(pow.Target) == -1 {
-			break
-		} else {
-			nonce++
-		}
-	}
+        if intHash.Cmp(pow.Target) == -1 {
+            break
+        } else {
+            nonce++
+        }
+    }
 
-	fmt.Println()
+    fmt.Println()
 
-	return nonce, hash[:]
+    return nonce, hash[:]
 }
 
 func (pow *ProofOfWork) Validate() bool {
-	var intHash big.Int
-	data := pow.InitData(pow.Block.Nonce)
+    var intHash big.Int
+    data := pow.InitData(pow.Block.Nonce)
 
-	hash := sha256.Sum256(data)
-	intHash.SetBytes(hash[:])
+    hash := sha256.Sum256(data)
+    intHash.SetBytes(hash[:])
 
-	return intHash.Cmp(pow.Target) == -1
+    return intHash.Cmp(pow.Target) == -1
 }
